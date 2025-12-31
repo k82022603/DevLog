@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibecoding.devlog.mapper.ProjectMapper">
+
+    <!-- Result Map 정의 -->
+    <resultMap id="projectResultMap" type="com.vibecoding.devlog.model.Project">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="startDate" column="start_date" jdbcType="DATE" javaType="java.time.LocalDate"/>
+        <result property="endDate" column="end_date" jdbcType="DATE" javaType="java.time.LocalDate"/>
+        <result property="progress" column="progress"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 공통 컬럼 -->
+    <sql id="projectColumns">
+        id, name, description, status,
+        start_date, end_date, progress,
+        created_at, updated_at
+    </sql>
+
+    <!-- 모든 프로젝트 조회 -->
+    <select id="findAll" resultMap="projectResultMap">
+        SELECT
+            <include refid="projectColumns"/>
+        FROM projects
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- ID로 프로젝트 조회 -->
+    <select id="findById" resultMap="projectResultMap">
+        SELECT
+            <include refid="projectColumns"/>
+        FROM projects
+        WHERE id = #{id}
+    </select>
+
+    <!-- 상태별 프로젝트 조회 -->
+    <select id="findByStatus" resultMap="projectResultMap">
+        SELECT
+            <include refid="projectColumns"/>
+        FROM projects
+        WHERE status = #{status}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 프로젝트 이름으로 검색 -->
+    <select id="searchByName" resultMap="projectResultMap">
+        SELECT
+            <include refid="projectColumns"/>
+        FROM projects
+        WHERE name LIKE CONCAT('%', #{keyword}, '%')
+           OR description LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 프로젝트 생성 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO projects (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            progress,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            #{name},
+            #{description},
+            #{status, jdbcType=VARCHAR},
+            #{startDate, jdbcType=DATE},
+            #{endDate, jdbcType=DATE},
+            #{progress, jdbcType=INTEGER},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- 프로젝트 수정 -->
+    <update id="update">
+        UPDATE projects
+        SET
+            name = #{name},
+            description = #{description},
+            status = #{status, jdbcType=VARCHAR},
+            start_date = #{startDate, jdbcType=DATE},
+            end_date = #{endDate, jdbcType=DATE},
+            progress = #{progress, jdbcType=INTEGER},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 프로젝트 진행률 업데이트 -->
+    <update id="updateProgress">
+        UPDATE projects
+        SET
+            progress = #{progress},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 프로젝트 상태 변경 -->
+    <update id="updateStatus">
+        UPDATE projects
+        SET
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 프로젝트 삭제 -->
+    <delete id="delete">
+        DELETE FROM projects
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 전체 프로젝트 수 조회 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*)
+        FROM projects
+    </select>
+
+    <!-- 상태별 프로젝트 수 조회 -->
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*)
+        FROM projects
+        WHERE status = #{status}
+    </select>
+
+</mapper>

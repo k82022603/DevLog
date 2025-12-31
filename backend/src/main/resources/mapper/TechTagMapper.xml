@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibecoding.devlog.mapper.TechTagMapper">
+
+    <!-- TechTag Result Map -->
+    <resultMap id="techTagResultMap" type="com.vibecoding.devlog.model.TechTag">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="category" column="category"/>
+        <result property="color" column="color"/>
+        <result property="usageCount" column="usage_count"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 공통 컬럼 -->
+    <sql id="techTagColumns">
+        id, name, category, color, usage_count,
+        created_at, updated_at
+    </sql>
+
+    <!-- 모든 기술 태그 조회 -->
+    <select id="findAll" resultMap="techTagResultMap">
+        SELECT
+            <include refid="techTagColumns"/>
+        FROM tech_tags
+        ORDER BY usage_count DESC, name ASC
+    </select>
+
+    <!-- ID로 기술 태그 조회 -->
+    <select id="findById" resultMap="techTagResultMap">
+        SELECT
+            <include refid="techTagColumns"/>
+        FROM tech_tags
+        WHERE id = #{id}
+    </select>
+
+    <!-- 이름으로 기술 태그 조회 -->
+    <select id="findByName" resultMap="techTagResultMap">
+        SELECT
+            <include refid="techTagColumns"/>
+        FROM tech_tags
+        WHERE name = #{name}
+    </select>
+
+    <!-- 카테고리별 기술 태그 조회 -->
+    <select id="findByCategory" resultMap="techTagResultMap">
+        SELECT
+            <include refid="techTagColumns"/>
+        FROM tech_tags
+        WHERE category = #{category}
+        ORDER BY usage_count DESC, name ASC
+    </select>
+
+    <!-- 인기 태그 조회 (사용 횟수 기준) -->
+    <select id="findPopular" resultMap="techTagResultMap">
+        SELECT
+            <include refid="techTagColumns"/>
+        FROM tech_tags
+        WHERE usage_count > 0
+        ORDER BY usage_count DESC, name ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 기술 태그 검색 -->
+    <select id="search" resultMap="techTagResultMap">
+        SELECT
+            <include refid="techTagColumns"/>
+        FROM tech_tags
+        <where>
+            <if test="keyword != null and keyword != ''">
+                name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY usage_count DESC, name ASC
+    </select>
+
+    <!-- 기술 태그 생성 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tech_tags (
+            name,
+            category,
+            color,
+            usage_count,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            #{name},
+            #{category, jdbcType=VARCHAR},
+            #{color, jdbcType=VARCHAR},
+            #{usageCount, jdbcType=INTEGER},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- 기술 태그 수정 -->
+    <update id="update">
+        UPDATE tech_tags
+        SET
+            name = #{name},
+            category = #{category, jdbcType=VARCHAR},
+            color = #{color, jdbcType=VARCHAR},
+            usage_count = #{usageCount, jdbcType=INTEGER},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 기술 태그 삭제 -->
+    <delete id="delete">
+        DELETE FROM tech_tags
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 사용 횟수 증가 -->
+    <update id="incrementUsageCount">
+        UPDATE tech_tags
+        SET
+            usage_count = usage_count + 1,
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 사용 횟수 감소 -->
+    <update id="decrementUsageCount">
+        UPDATE tech_tags
+        SET
+            usage_count = GREATEST(0, usage_count - 1),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 전체 태그 수 조회 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*)
+        FROM tech_tags
+    </select>
+
+    <!-- 카테고리별 태그 수 조회 -->
+    <select id="countByCategory" resultType="int">
+        SELECT COUNT(*)
+        FROM tech_tags
+        WHERE category = #{category}
+    </select>
+
+</mapper>

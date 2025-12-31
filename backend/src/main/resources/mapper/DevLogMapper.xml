@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibecoding.devlog.mapper.DevLogMapper">
+
+    <!-- Result Map -->
+    <resultMap id="devLogResultMap" type="com.vibecoding.devlog.model.DevLog">
+        <id property="id" column="id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="logDate" column="log_date" jdbcType="DATE" javaType="java.time.LocalDate"/>
+        <result property="startTime" column="start_time" jdbcType="TIME" javaType="java.time.LocalTime"/>
+        <result property="endTime" column="end_time" jdbcType="TIME" javaType="java.time.LocalTime"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="achievements" column="achievements"/>
+        <result property="challenges" column="challenges"/>
+        <result property="learnings" column="learnings"/>
+        <result property="codeSnippets" column="code_snippets"/>
+        <result property="mood" column="mood"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- Common Columns -->
+    <sql id="devLogColumns">
+        id, project_id, log_date, start_time, end_time,
+        title, description, achievements, challenges, learnings,
+        code_snippets, mood, created_at, updated_at
+    </sql>
+
+    <!-- Find All (with optional filters) -->
+    <select id="findAll" resultMap="devLogResultMap">
+        SELECT
+            <include refid="devLogColumns"/>
+        FROM dev_logs
+        <where>
+            <if test="projectId != null">
+                AND project_id = #{projectId}
+            </if>
+            <if test="startDate != null">
+                AND log_date &gt;= #{startDate, jdbcType=TIMESTAMP}
+            </if>
+            <if test="endDate != null">
+                AND log_date &lt;= #{endDate, jdbcType=TIMESTAMP}
+            </if>
+        </where>
+        ORDER BY log_date DESC, created_at DESC
+    </select>
+
+    <!-- Find By ID -->
+    <select id="findById" resultMap="devLogResultMap">
+        SELECT
+            <include refid="devLogColumns"/>
+        FROM dev_logs
+        WHERE id = #{id}
+    </select>
+
+    <!-- Search -->
+    <select id="search" resultMap="devLogResultMap">
+        SELECT
+            <include refid="devLogColumns"/>
+        FROM dev_logs
+        WHERE title LIKE CONCAT('%', #{keyword}, '%')
+           OR description LIKE CONCAT('%', #{keyword}, '%')
+           OR achievements LIKE CONCAT('%', #{keyword}, '%')
+           OR challenges LIKE CONCAT('%', #{keyword}, '%')
+           OR learnings LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY log_date DESC, created_at DESC
+    </select>
+
+    <!-- Find By Date Range -->
+    <select id="findByDateRange" resultMap="devLogResultMap">
+        SELECT
+            <include refid="devLogColumns"/>
+        FROM dev_logs
+        WHERE log_date &gt;= #{startDate, jdbcType=TIMESTAMP}
+          AND log_date &lt;= #{endDate, jdbcType=TIMESTAMP}
+        ORDER BY log_date DESC, created_at DESC
+    </select>
+
+    <!-- Find By Project ID -->
+    <select id="findByProjectId" resultMap="devLogResultMap">
+        SELECT
+            <include refid="devLogColumns"/>
+        FROM dev_logs
+        WHERE project_id = #{projectId}
+        ORDER BY log_date DESC, created_at DESC
+    </select>
+
+    <!-- Find Calendar Data -->
+    <select id="findCalendarData" resultType="map">
+        SELECT
+            log_date as date,
+            COUNT(*) as count
+        FROM dev_logs
+        WHERE EXTRACT(YEAR FROM log_date) = #{year}
+          AND EXTRACT(MONTH FROM log_date) = #{month}
+        GROUP BY log_date
+        ORDER BY log_date
+    </select>
+
+    <!-- Insert -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dev_logs (
+            project_id, log_date, start_time, end_time,
+            title, description, achievements, challenges, learnings,
+            code_snippets, mood, created_at, updated_at
+        )
+        VALUES (
+            #{projectId},
+            #{logDate, jdbcType=DATE},
+            #{startTime, jdbcType=TIME},
+            #{endTime, jdbcType=TIME},
+            #{title},
+            #{description},
+            #{achievements},
+            #{challenges},
+            #{learnings},
+            #{codeSnippets, jdbcType=OTHER, typeHandler=org.apache.ibatis.type.ObjectTypeHandler},
+            #{mood, jdbcType=VARCHAR},
+            NOW(),
+            NOW()
+        )
+    </insert>
+
+    <!-- Update -->
+    <update id="update">
+        UPDATE dev_logs
+        SET
+            project_id = #{projectId},
+            log_date = #{logDate, jdbcType=DATE},
+            start_time = #{startTime, jdbcType=TIME},
+            end_time = #{endTime, jdbcType=TIME},
+            title = #{title},
+            description = #{description},
+            achievements = #{achievements},
+            challenges = #{challenges},
+            learnings = #{learnings},
+            code_snippets = #{codeSnippets, jdbcType=OTHER, typeHandler=org.apache.ibatis.type.ObjectTypeHandler},
+            mood = #{mood, jdbcType=VARCHAR},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- Delete -->
+    <delete id="delete">
+        DELETE FROM dev_logs
+        WHERE id = #{id}
+    </delete>
+
+    <!-- Insert Log Tech Tag -->
+    <insert id="insertLogTechTag">
+        INSERT INTO log_tech_tags (log_id, tech_tag_id)
+        VALUES (#{logId}, #{tagId})
+    </insert>
+
+    <!-- Delete Log Tech Tags -->
+    <delete id="deleteLogTechTags">
+        DELETE FROM log_tech_tags
+        WHERE log_id = #{logId}
+    </delete>
+
+    <!-- Count -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*)
+        FROM dev_logs
+    </select>
+
+    <!-- Count By Project ID -->
+    <select id="countByProjectId" resultType="int">
+        SELECT COUNT(*)
+        FROM dev_logs
+        WHERE project_id = #{projectId}
+    </select>
+
+    <!-- Count By Date Range -->
+    <select id="countByDateRange" resultType="int">
+        SELECT COUNT(*)
+        FROM dev_logs
+        WHERE log_date &gt;= #{startDate, jdbcType=TIMESTAMP}
+          AND log_date &lt;= #{endDate, jdbcType=TIMESTAMP}
+    </select>
+
+    <!-- Find Recent -->
+    <select id="findRecent" resultMap="devLogResultMap">
+        SELECT
+            <include refid="devLogColumns"/>
+        FROM dev_logs
+        ORDER BY log_date DESC, created_at DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

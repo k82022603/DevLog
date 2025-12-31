@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.vibecoding.devlog.mapper.StatisticsMapper">
+
+    <!-- ========== 주간 통계 ========== -->
+
+    <!-- 주간 통계 기본 정보 조회 -->
+    <select id="getWeeklyBasicStats" resultType="map">
+        SELECT
+            COUNT(*)::integer as totallogs,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0)::integer as totalworkminutes,
+            COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (end_time - start_time)) / 60)), 0)::integer as avgworkminutes,
+            COUNT(DISTINCT project_id)::integer as activeprojects
+        FROM dev_logs
+        WHERE DATE(log_date) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 주간 일별 로그 카운트 조회 -->
+    <select id="getWeeklyDailyCounts" resultType="com.vibecoding.devlog.dto.response.WeeklyStatsDTO$DailyCount">
+        SELECT
+            TO_CHAR(log_date, 'YYYY-MM-DD') as date,
+            COUNT(*) as count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0) as workMinutes
+        FROM dev_logs
+        WHERE DATE(log_date) BETWEEN #{startDate} AND #{endDate}
+        GROUP BY DATE(log_date)
+        ORDER BY log_date ASC
+    </select>
+
+    <!-- 주간 프로젝트별 로그 카운트 조회 -->
+    <select id="getWeeklyProjectCounts" resultType="com.vibecoding.devlog.dto.response.WeeklyStatsDTO$ProjectCount">
+        SELECT
+            dl.project_id as projectId,
+            p.name as projectName,
+            COUNT(*) as count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (dl.end_time - dl.start_time)) / 60), 0) as workMinutes
+        FROM dev_logs dl
+        INNER JOIN projects p ON dl.project_id = p.id
+        WHERE DATE(dl.log_date) BETWEEN #{startDate} AND #{endDate}
+        GROUP BY dl.project_id, p.name
+        ORDER BY count DESC, workMinutes DESC
+    </select>
+
+    <!-- ========== 월간 통계 ========== -->
+
+    <!-- 월간 통계 기본 정보 조회 -->
+    <select id="getMonthlyBasicStats" resultType="map">
+        SELECT
+            COUNT(*)::integer as totallogs,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0)::integer as totalworkminutes,
+            COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (end_time - start_time)) / 60)), 0)::integer as avgworkminutes,
+            COUNT(DISTINCT project_id)::integer as activeprojects,
+            COUNT(DISTINCT DATE(log_date))::integer as workdays
+        FROM dev_logs
+        WHERE EXTRACT(YEAR FROM log_date) = #{year}
+          AND EXTRACT(MONTH FROM log_date) = #{month}
+    </select>
+
+    <!-- 월간 일별 로그 카운트 조회 -->
+    <select id="getMonthlyDailyCounts" resultType="com.vibecoding.devlog.dto.response.MonthlyStatsDTO$DailyCount">
+        SELECT
+            TO_CHAR(log_date, 'YYYY-MM-DD') as date,
+            COUNT(*) as count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0) as workMinutes
+        FROM dev_logs
+        WHERE EXTRACT(YEAR FROM log_date) = #{year}
+          AND EXTRACT(MONTH FROM log_date) = #{month}
+        GROUP BY DATE(log_date)
+        ORDER BY log_date ASC
+    </select>
+
+    <!-- 월간 프로젝트별 로그 카운트 조회 -->
+    <select id="getMonthlyProjectCounts" resultType="com.vibecoding.devlog.dto.response.MonthlyStatsDTO$ProjectCount">
+        SELECT
+            dl.project_id as projectId,
+            p.name as projectName,
+            COUNT(*) as count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (dl.end_time - dl.start_time)) / 60), 0) as workMinutes
+        FROM dev_logs dl
+        INNER JOIN projects p ON dl.project_id = p.id
+        WHERE EXTRACT(YEAR FROM dl.log_date) = #{year}
+          AND EXTRACT(MONTH FROM dl.log_date) = #{month}
+        GROUP BY dl.project_id, p.name
+        ORDER BY count DESC, workMinutes DESC
+    </select>
+
+    <!-- 월간 주별 카운트 조회 -->
+    <select id="getMonthlyWeeklyCounts" resultType="com.vibecoding.devlog.dto.response.MonthlyStatsDTO$WeeklyCount">
+        WITH RECURSIVE weeks AS (
+            SELECT
+                CAST(#{year} || '-' || LPAD(CAST(#{month} AS TEXT), 2, '0') || '-01' AS DATE) as week_start,
+                1 as week_number
+            UNION ALL
+            SELECT
+                (week_start + INTERVAL '7 days')::DATE,
+                week_number + 1
+            FROM weeks
+            WHERE (week_start + INTERVAL '7 days')::DATE &lt;= (DATE_TRUNC('month', CAST(#{year} || '-' || LPAD(CAST(#{month} AS TEXT), 2, '0') || '-01' AS DATE)) + INTERVAL '1 month' - INTERVAL '1 day')::DATE
+        )
+        SELECT
+            w.week_number as weekNumber,
+            w.week_start as startDate,
+            LEAST((w.week_start + INTERVAL '6 days')::DATE, (DATE_TRUNC('month', w.week_start) + INTERVAL '1 month' - INTERVAL '1 day')::DATE) as endDate,
+            COALESCE(COUNT(dl.id), 0) as count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (dl.end_time - dl.start_time)) / 60), 0) as workMinutes
+        FROM weeks w
+        LEFT JOIN dev_logs dl ON DATE(dl.log_date) BETWEEN w.week_start
+                                  AND LEAST((w.week_start + INTERVAL '6 days')::DATE, (DATE_TRUNC('month', w.week_start) + INTERVAL '1 month' - INTERVAL '1 day')::DATE)
+        GROUP BY w.week_number, w.week_start
+        ORDER BY w.week_number
+    </select>
+
+    <!-- ========== 프로젝트별 통계 ========== -->
+
+    <!-- 프로젝트 통계 기본 정보 조회 -->
+    <select id="getProjectBasicStats" resultType="map">
+        SELECT
+            p.id as projectid,
+            p.name as projectname,
+            p.description as projectdescription,
+            p.status as projectstatus,
+            p.progress::integer as projectprogress,
+            p.start_date as projectstartdate,
+            p.end_date as projectenddate,
+            COUNT(dl.id)::integer as totallogs,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (dl.end_time - dl.start_time)) / 60), 0)::integer as totalworkminutes,
+            COALESCE(ROUND(AVG(EXTRACT(EPOCH FROM (dl.end_time - dl.start_time)) / 60)), 0)::integer as avgworkminutes,
+            MAX(dl.log_date) as lastlogdate,
+            MIN(dl.log_date) as firstlogdate,
+            COUNT(DISTINCT ltt.tech_tag_id)::integer as techtagcount
+        FROM projects p
+        LEFT JOIN dev_logs dl ON p.id = dl.project_id
+        LEFT JOIN log_tech_tags ltt ON dl.id = ltt.log_id
+        WHERE p.id = #{projectId}
+        GROUP BY p.id, p.name, p.description, p.status, p.progress, p.start_date, p.end_date
+    </select>
+
+    <!-- 프로젝트 일별 로그 카운트 조회 -->
+    <select id="getProjectDailyCounts" resultType="com.vibecoding.devlog.dto.response.ProjectStatsDTO$DailyCount">
+        SELECT
+            TO_CHAR(log_date, 'YYYY-MM-DD') as date,
+            COUNT(*) as count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0) as workMinutes
+        FROM dev_logs
+        WHERE project_id = #{projectId}
+        GROUP BY DATE(log_date)
+        ORDER BY log_date ASC
+    </select>
+
+    <!-- 프로젝트 기술 태그별 카운트 조회 -->
+    <select id="getProjectTechTagCounts" resultType="com.vibecoding.devlog.dto.response.ProjectStatsDTO$TechTagCount">
+        SELECT
+            t.id as tagId,
+            t.name as tagName,
+            t.category as category,
+            t.color as color,
+            COUNT(ltt.log_id) as count
+        FROM tech_tags t
+        INNER JOIN log_tech_tags ltt ON t.id = ltt.tech_tag_id
+        INNER JOIN dev_logs dl ON ltt.log_id = dl.id
+        WHERE dl.project_id = #{projectId}
+        GROUP BY t.id, t.name, t.category, t.color
+        ORDER BY count DESC, t.name ASC
+    </select>
+
+    <!-- 프로젝트 주간 활동 조회 -->
+    <select id="getProjectWeeklyActivities" resultType="com.vibecoding.devlog.dto.response.ProjectStatsDTO$WeeklyActivity">
+        WITH RECURSIVE weeks AS (
+            SELECT
+                CAST(MIN(log_date) AS DATE) as week_start
+            FROM dev_logs
+            WHERE project_id = #{projectId}
+            UNION ALL
+            SELECT
+                (week_start + INTERVAL '7 days')::DATE
+            FROM weeks
+            WHERE week_start &lt; (SELECT CAST(MAX(log_date) AS DATE) FROM dev_logs WHERE project_id = #{projectId})
+        )
+        SELECT
+            w.week_start as startDate,
+            (w.week_start + INTERVAL '6 days')::DATE as endDate,
+            COALESCE(COUNT(dl.id), 0) as logCount,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (dl.end_time - dl.start_time)) / 60), 0) as workMinutes
+        FROM weeks w
+        LEFT JOIN dev_logs dl ON DATE(dl.log_date) BETWEEN w.week_start AND (w.week_start + INTERVAL '6 days')::DATE
+                              AND dl.project_id = #{projectId}
+        GROUP BY w.week_start
+        ORDER BY w.week_start
+    </select>
+
+    <!-- ========== 기술 스택 통계 ========== -->
+
+    <!-- 기술 스택 기본 통계 조회 -->
+    <select id="getTechStackBasicStats" resultType="map">
+        SELECT
+            COUNT(*)::integer as totaltags,
+            COALESCE(SUM(usage_count), 0)::integer as totalusagecount
+        FROM tech_tags
+    </select>
+
+    <!-- 카테고리별 태그 카운트 조회 -->
+    <select id="getTechStackCategoryCounts" resultType="com.vibecoding.devlog.dto.response.TechStackStatsDTO$CategoryCount">
+        SELECT
+            category,
+            COUNT(*) as count,
+            COALESCE(SUM(usage_count), 0) as usageCount,
+            ROUND(COALESCE(SUM(usage_count), 0) * 100.0 / (SELECT SUM(usage_count) FROM tech_tags WHERE usage_count > 0), 2) as percentage
+        FROM tech_tags
+        WHERE usage_count > 0
+        GROUP BY category
+        ORDER BY usageCount DESC
+    </select>
+
+    <!-- 모든 태그 사용 통계 조회 -->
+    <select id="getTechStackAllTagUsages" resultType="com.vibecoding.devlog.dto.response.TechStackStatsDTO$TagUsage">
+        SELECT
+            t.id as tagId,
+            t.name as tagName,
+            t.category as category,
+            t.color as color,
+            t.usage_count as usageCount,
+            ROUND(t.usage_count * 100.0 / (SELECT SUM(usage_count) FROM tech_tags WHERE usage_count > 0), 2) as percentage,
+            TO_CHAR(MAX(dl.log_date), 'YYYY-MM-DD') as lastUsedDate,
+            COUNT(DISTINCT dl.project_id) as projectCount
+        FROM tech_tags t
+        LEFT JOIN log_tech_tags ltt ON t.id = ltt.tech_tag_id
+        LEFT JOIN dev_logs dl ON ltt.log_id = dl.id
+        WHERE t.usage_count > 0
+        GROUP BY t.id, t.name, t.category, t.color, t.usage_count
+        ORDER BY t.usage_count DESC, t.name ASC
+    </select>
+
+    <!-- 인기 태그 조회 (사용 횟수 기준 TOP N) -->
+    <select id="getTechStackPopularTags" resultType="com.vibecoding.devlog.dto.response.TechStackStatsDTO$TagUsage">
+        SELECT
+            t.id as tagId,
+            t.name as tagName,
+            t.category as category,
+            t.color as color,
+            t.usage_count as usageCount,
+            ROUND(t.usage_count * 100.0 / (SELECT SUM(usage_count) FROM tech_tags WHERE usage_count > 0), 2) as percentage,
+            TO_CHAR(MAX(dl.log_date), 'YYYY-MM-DD') as lastUsedDate,
+            COUNT(DISTINCT dl.project_id) as projectCount
+        FROM tech_tags t
+        LEFT JOIN log_tech_tags ltt ON t.id = ltt.tech_tag_id
+        LEFT JOIN dev_logs dl ON ltt.log_id = dl.id
+        WHERE t.usage_count > 0
+        GROUP BY t.id, t.name, t.category, t.color, t.usage_count
+        ORDER BY t.usage_count DESC, t.name ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 최근 사용된 태그 조회 (TOP N) -->
+    <select id="getTechStackRecentTags" resultType="com.vibecoding.devlog.dto.response.TechStackStatsDTO$TagUsage">
+        SELECT
+            t.id as tagId,
+            t.name as tagName,
+            t.category as category,
+            t.color as color,
+            t.usage_count as usageCount,
+            ROUND(t.usage_count * 100.0 / NULLIF((SELECT SUM(usage_count) FROM tech_tags WHERE usage_count > 0), 0), 2) as percentage,
+            TO_CHAR(MAX(dl.log_date), 'YYYY-MM-DD') as lastUsedDate,
+            COUNT(DISTINCT dl.project_id) as projectCount
+        FROM tech_tags t
+        INNER JOIN log_tech_tags ltt ON t.id = ltt.tech_tag_id
+        INNER JOIN dev_logs dl ON ltt.log_id = dl.id
+        GROUP BY t.id, t.name, t.category, t.color, t.usage_count
+        ORDER BY MAX(dl.log_date) DESC, t.name ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 태그별 프로젝트 수 조회 -->
+    <select id="getProjectCountByTag" resultType="int">
+        SELECT COUNT(DISTINCT dl.project_id)
+        FROM dev_logs dl
+        INNER JOIN log_tech_tags ltt ON dl.id = ltt.log_id
+        WHERE ltt.tech_tag_id = #{tagId}
+    </select>
+
+    <!-- ========== 공통 헬퍼 쿼리 ========== -->
+
+    <!-- 기간별 활성 프로젝트 수 조회 -->
+    <select id="getActiveProjectCount" resultType="int">
+        SELECT COUNT(DISTINCT project_id)
+        FROM dev_logs
+        WHERE DATE(log_date) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 기간별 작업 일수 조회 -->
+    <select id="getWorkDaysCount" resultType="int">
+        SELECT COUNT(DISTINCT DATE(log_date))
+        FROM dev_logs
+        WHERE DATE(log_date) BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+</mapper>
