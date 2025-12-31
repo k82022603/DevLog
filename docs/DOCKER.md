@@ -227,7 +227,119 @@ UNION ALL
 SELECT 'project_stats', COUNT(*) FROM project_stats;
 ```
 
+---
+
+## 🚀 프로덕션 배포
+
+### 프로덕션 Docker Compose 설정
+
+프로덕션 환경에서는 다음 사항을 고려하세요:
+
+```yaml
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: devlog
+      POSTGRES_USER: devlog
+      POSTGRES_PASSWORD: ${DB_PASSWORD}  # 환경 변수 사용
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devlog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+```
+
+### 배포 체크리스트
+
+```bash
+# 1. 환경 변수 설정
+export DB_PASSWORD="secure_password_123"
+export API_URL="https://api.example.com"
+
+# 2. 프로덕션 docker-compose 실행
+docker-compose -f docker-compose.prod.yml up -d
+
+# 3. 서비스 상태 확인
+docker-compose -f docker-compose.prod.yml ps
+
+# 4. 헬스 체크
+curl -f http://localhost:5432 || exit 1
+
+# 5. 로그 확인
+docker-compose -f docker-compose.prod.yml logs -f postgres
+```
+
+### 보안 권장사항
+
+1. **데이터베이스 암호**
+   - 강력한 암호 사용 (최소 16자, 특수문자 포함)
+   - 환경 변수로 관리 (`.env` 파일 사용, Git 제외)
+
+2. **네트워크**
+   - 데이터베이스 포트(5432) 내부 트래픽만 허용
+   - pgAdmin(5050)은 VPN/내부망에서만 접근
+
+3. **백업**
+   - 일일 자동 백업 설정
+   - 별도 스토리지에 저장
+   - 정기적인 복구 테스트
+
+4. **모니터링**
+   - 디스크 사용량 모니터링
+   - 데이터베이스 성능 모니터링
+   - 로그 수집 및 분석
+
+### 자동 백업 설정
+
+```bash
+# 백업 스크립트 (backup.sh)
+#!/bin/bash
+BACKUP_DIR="/var/backups/devlog"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+docker exec devlog-postgres pg_dump \
+  -U devlog \
+  -d devlog \
+  -F c \
+  -f /tmp/devlog-backup-${TIMESTAMP}.dump
+
+mv /tmp/devlog-backup-${TIMESTAMP}.dump $BACKUP_DIR/
+
+# 7일 이상 된 파일 삭제
+find $BACKUP_DIR -type f -mtime +7 -delete
+```
+
+**Cron 등록**:
+```bash
+# 매일 자정에 백업
+0 0 * * * /usr/local/bin/backup.sh >> /var/log/devlog-backup.log 2>&1
+```
+
+---
+
 ## 추가 자료
 - [PostgreSQL 공식 문서](https://www.postgresql.org/docs/15/)
 - [Docker Compose 문서](https://docs.docker.com/compose/)
 - [pgAdmin 사용법](https://www.pgadmin.org/docs/)
+- [OPERATIONS_MANUAL.md](./OPERATIONS_MANUAL.md) - 운영 가이드
+- [SETUP.md](./SETUP.md) - 설치 가이드
+
+---
+
+*Last Updated: 2025-12-31*
+*DevLog Docker Guide v1.1.0*

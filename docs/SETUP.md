@@ -1,14 +1,53 @@
 # DevLog 설치 및 실행 가이드
 
-## 사전 요구사항
+> 🚀 **빠른 시작**: Docker를 사용하면 3분 안에 시작할 수 있습니다!
 
-### 필수 소프트웨어
+---
+
+## ⚡ 빠른 시작 (Docker 권장)
+
+### 최소 요구사항
+- **Docker 20.10+**
+- **Docker Compose 2.0+**
+
+### 3단계 설정
+
+```bash
+# 1️⃣ 저장소 클론
+git clone https://github.com/k82022603/DevLog.git
+cd DevLog
+
+# 2️⃣ Docker Compose로 백엔드 빌드 및 실행
+docker-compose up -d
+
+# 3️⃣ 프론트엔드 실행 (별도 터미널)
+cd frontend
+npm install
+npm start
+```
+
+### 접속 정보
+- 🌐 **프론트엔드**: http://localhost:3000
+- 🔌 **백엔드 API**: http://localhost:8080/api
+- 🗄️ **pgAdmin** (DB 관리): http://localhost:5050
+  - 이메일: `admin@devlog.com`
+  - 비밀번호: `admin123`
+
+자세한 내용은 [DOCKER.md](./DOCKER.md)를 참조하세요.
+
+---
+
+## 📦 전통적인 설치 (Java/Node.js 직접 설치)
+
+### 사전 요구사항
+
+#### 필수 소프트웨어
 - **Java 17** 이상
 - **Node.js 18** 이상
 - **PostgreSQL 15**
 - **Maven 3.8** 이상
 
-## 설치 단계
+### 설치 단계
 
 ### 1. 프로젝트 클론
 ```bash
@@ -146,3 +185,43 @@ React 개발 서버는 자동으로 변경사항을 감지하고 새로고침합
 ```
 REACT_APP_API_URL=http://localhost:8080/api
 ```
+
+---
+
+## 🚀 프로덕션 배포
+
+프로덕션 환경에서는 다음을 권장합니다:
+
+1. **Docker 컨테이너 배포**: [DOCKER.md](./DOCKER.md) 참조
+2. **운영 가이드**: [OPERATIONS_MANUAL.md](./OPERATIONS_MANUAL.md) 참조
+3. **배포 체크리스트**: [DEPLOYMENT_COMPLETE.md](../DEPLOYMENT_COMPLETE.md) 참조
+
+### 프로덕션 환경 설정
+
+**환경 변수 설정** (`.env` 또는 환경 변수)
+```bash
+# 백엔드
+SPRING_DATASOURCE_URL=jdbc:postgresql://db.example.com:5432/devlog
+SPRING_DATASOURCE_USERNAME=devlog
+SPRING_DATASOURCE_PASSWORD=secure_password
+SERVER_PORT=8080
+
+# 프론트엔드
+REACT_APP_API_URL=https://api.example.com
+```
+
+---
+
+## 📚 추가 참고 자료
+
+- **아키텍처**: [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **API 명세**: [API.md](./API.md) 또는 [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+- **UI/UX 가이드**: [UI_UX_GUIDE.md](./UI_UX_GUIDE.md)
+- **Docker 가이드**: [DOCKER.md](./DOCKER.md)
+- **운영 매뉴얼**: [OPERATIONS_MANUAL.md](./OPERATIONS_MANUAL.md)
+- **개발 가이드**: [CLAUDE.md](../CLAUDE.md)
+- **문서 네비게이션**: [README.md](./README.md)
+
+---
+
+*Last Updated: 2025-12-31*

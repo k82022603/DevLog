@@ -1,16 +1,47 @@
-# DevLog API Documentation
+# DevLog API 명세서
 
-## Base URL
+> 이 문서는 DevLog REST API의 간단한 개요입니다.
+> **전체 API 상세 내용은 [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)를 참조하세요.**
+
+---
+
+## 📌 API 개요
+
+### Base URL
 ```
 http://localhost:8080/api
 ```
 
-## Health Check
+### API 버전
+- 현재 버전: v1.0
+- 최종 업데이트: 2025-12-31
 
-### GET /health
-서버 상태 확인
+### 총 엔드포인트
+- **전체 엔드포인트**: 37개
+- 상세 정보: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
 
-**Response**
+---
+
+## 🔗 빠른 링크
+
+| 카테고리 | 엔드포인트 수 | 상세 문서 |
+|---------|-------------|---------|
+| Health Check | 1개 | [API_DOCUMENTATION.md#health-check](./API_DOCUMENTATION.md#health-check) |
+| Projects API | 7개 | [API_DOCUMENTATION.md#projects-api](./API_DOCUMENTATION.md#projects-api) |
+| DevLogs API | 12개 | [API_DOCUMENTATION.md#devlogs-api](./API_DOCUMENTATION.md#devlogs-api) |
+| Statistics API | 14개 | [API_DOCUMENTATION.md#statistics-api](./API_DOCUMENTATION.md#statistics-api) |
+| Tags API | 3개 | [API_DOCUMENTATION.md#tags-api](./API_DOCUMENTATION.md#tags-api) |
+
+---
+
+## 🚀 빠른 시작
+
+### Health Check
+```bash
+curl http://localhost:8080/api/health
+```
+
+**Response** (200 OK):
 ```json
 {
   "status": "OK",
@@ -19,12 +50,12 @@ http://localhost:8080/api
 }
 ```
 
-## Projects API
+### 프로젝트 목록 조회
+```bash
+curl http://localhost:8080/api/projects
+```
 
-### GET /projects
-모든 프로젝트 목록 조회
-
-**Response**
+**Response** (200 OK):
 ```json
 [
   {
@@ -40,13 +71,12 @@ http://localhost:8080/api
 ]
 ```
 
-### GET /projects/{id}
-특정 프로젝트 조회
+### 개발 로그 목록 조회
+```bash
+curl http://localhost:8080/api/logs
+```
 
-**Parameters**
-- `id` (path): 프로젝트 ID
-
-**Response**
+**Response** (200 OK):
 ```json
 {
   "id": 1,
@@ -192,3 +222,68 @@ http://localhost:8080/api
 - `400 Bad Request`: 잘못된 요청
 - `404 Not Found`: 리소스를 찾을 수 없음
 - `500 Internal Server Error`: 서버 오류
+
+---
+
+## 📖 상세 문서
+
+### 전체 API 명세
+더 상세한 API 문서는 **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)**를 참조하세요.
+
+### 포함 내용
+- 모든 37개 엔드포인트의 상세 설명
+- 요청/응답 예제
+- 에러 처리
+- 데이터 모델 정의
+
+---
+
+## 🔗 관련 문서
+
+- **API 상세 명세**: [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+- **아키텍처**: [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **설치 가이드**: [SETUP.md](./SETUP.md)
+- **UI/UX 가이드**: [UI_UX_GUIDE.md](./UI_UX_GUIDE.md)
+- **문서 네비게이션**: [README.md](./README.md)
+
+---
+
+## 🧪 API 테스트
+
+### cURL로 테스트
+```bash
+# Health Check
+curl -X GET http://localhost:8080/api/health
+
+# 프로젝트 목록
+curl -X GET http://localhost:8080/api/projects
+
+# 개발 로그 목록
+curl -X GET http://localhost:8080/api/logs
+```
+
+### Postman으로 테스트
+1. Postman 앱 열기
+2. "New Request" 클릭
+3. URL 입력: `http://localhost:8080/api/health`
+4. "Send" 클릭
+
+---
+
+## 📝 API 개선 이력
+
+| 버전 | 날짜 | 변경사항 |
+|------|------|---------|
+| 1.0 | 2025-12-31 | API 명세서 작성 (37개 엔드포인트) |
+
+---
+
+## 📞 문의 및 지원
+
+- **버그 리포트**: [GitHub Issues](https://github.com/k82022603/DevLog/issues)
+- **기술 문의**: [GitHub Discussions](https://github.com/k82022603/DevLog/discussions)
+
+---
+
+*Last Updated: 2025-12-31*
+*DevLog API v1.0*

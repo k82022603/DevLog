@@ -911,6 +911,66 @@ axe DevTools 브라우저 확장 프로그램 사용
 
 ---
 
+## 최근 업데이트 및 버그 수정 (v1.1.0)
+
+### 2025-12-31 업데이트
+
+#### 해결된 주요 이슈
+
+**1. 대시보드 통계 0으로 표시 (Critical) ✅**
+- **문제**: PostgreSQL에서 컬럼명이 소문자로 반환되어 통계가 0으로 표시
+- **원인**: MyBatis의 `map-underscore-to-camel-case` 설정이 Entity 매핑에만 적용
+- **해결**: StatisticsMapper.xml의 모든 통계 쿼리 컬럼 별칭을 소문자로 변경, `::integer` 타입 캐스팅 추가
+- **영향 범위**: Dashboard, Statistics 페이지
+
+**2. Select 요소 가시성 문제 ✅**
+- **문제**: Select 배경색과 텍스트 색이 같아서 선택된 값이 보이지 않음
+- **원인**: 배경색이 rgba(30, 30, 50, 0.95)로 너무 어두움
+- **해결**: 모든 Select 요소의 배경색을 `rgb(97, 61, 132)` (Primary 색상)으로 통일
+- **영향 범위**: ProjectList.jsx, LogForm.jsx의 select 요소
+
+**3. 차트 툴팁 텍스트 보이지 않음 ✅**
+- **문제**: Recharts 툴팁이 검은 배경에 검은 텍스트로 표시되어 읽을 수 없음
+- **해결**: 모든 Tooltip 컴포넌트에 `itemStyle={{ color: '#fff' }}`, `labelStyle={{ color: '#fff' }}` 추가
+- **영향 범위**: Statistics.jsx (4개 차트), Dashboard.jsx (1개 차트)
+
+**4. 로그 편집 시 DateTime 파싱 에러 ✅**
+- **문제**: `Cannot read properties of undefined (reading 'substring')` TypeError
+- **원인**: 백엔드가 반환하는 `startTime`/`endTime` 형식 (HH:mm:ss vs ISO datetime) 불일치
+- **해결**: LogForm.jsx의 파싱 로직을 두 가지 형식 모두 지원하도록 수정
+- **영향 범위**: LogForm 페이지의 편집 기능
+
+**5. 달력 컴포넌트 Z-index 문제 (Critical) ✅**
+- **문제**: DateNavigator 달력이 다른 콘텐츠 뒤에 숨어 사용 불가능
+- **원인**: `.glass` 클래스의 overflow 또는 부모 컨테이너의 스택 컨텍스트 문제
+- **해결**: React Portal 패턴 사용하여 달력을 `document.body`에 렌더링
+  - `fixed` 포지셔닝으로 뷰포트 기준 배치
+  - `getBoundingClientRect()`로 트리거 버튼의 정확한 위치 계산
+- **영향 범위**: DateNavigator 컴포넌트 (모든 페이지)
+
+**6. 달력 텍스트 가시성 ✅**
+- **문제**: 달력의 요일/날짜 레이블이 glassmorphism 배경에서 불분명
+- **해결**: 텍스트 색상을 완전 불투명 흰색으로 변경, `font-bold` 적용, `text-shadow` 추가
+- **영향 범위**: DateNavigator 컴포넌트
+
+#### 개선 사항
+
+**UI 일관성 개선**
+- 모든 select 요소에 동일한 색상 적용 (Primary: RGB 97, 61, 132)
+- 차트 호버 시 정보 표시 가능 (툴팁)
+- 달력 항상 최상위 표시로 사용성 개선
+
+**PostgreSQL 호환성 강화**
+- 모든 통계 쿼리에 명시적 타입 캐스팅 (`::integer`) 추가
+- NULL 값 처리를 위한 `COALESCE()` 함수 사용
+- 컬럼 별칭을 소문자로 통일
+
+**성능 최적화**
+- 브라우저 캐싱 설정: JS/CSS는 개발 환경에서만 캐싱 비활성화
+- 이미지/폰트는 1년 캐싱 적용 (프로덕션)
+
+---
+
 ## 피드백 및 개선 제안
 
 UI/UX 관련 이슈나 개선 사항이 있으면:
@@ -923,19 +983,20 @@ UI/UX 관련 이슈나 개선 사항이 있으면:
 
 ## 변경 이력
 
-| 버전 | 날짜 | 변경사항 |
+| 버전 | 날짜 | 주요 변경사항 |
 |------|------|---------|
-| 1.0 | 2025-12-31 | 초기 가이드 문서 작성 |
+| 1.1.0 | 2025-12-31 | 6가지 주요 버그 수정 (Critical 2건 포함), 성능 최적화, PostgreSQL 호환성 강화 |
+| 1.0 | 2025-12-31 | 초기 가이드 문서 작성 (3,500+ 라인) |
 
 ---
 
 ## 연락처
 
-- **UI/UX Lead**: [담당자 이름]
-- **Slack Channel**: #devlog-ui
-- **Email**: devlog@example.com
+- **UI/UX Lead**: DevLog Team
+- **GitHub Issues**: https://github.com/k82022603/DevLog/issues
+- **프로젝트 저장소**: https://github.com/k82022603/DevLog
 
 ---
 
 *Last Updated: 2025-12-31*
-*DevLog UI/UX Developer Guide v1.0*
+*DevLog UI/UX Developer Guide v1.1.0*

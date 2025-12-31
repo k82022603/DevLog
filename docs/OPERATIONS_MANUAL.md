@@ -963,6 +963,57 @@ gunzip < /var/backups/devlog/devlog-backup-YYYYMMDD-HHMMSS.sql.gz | \
 
 ---
 
+## 최근 업데이트 (v1.1.0)
+
+### 2025-12-31 배포
+
+#### 주요 개선사항
+
+**시스템 안정성**
+- 6가지 주요 버그 수정 (Critical 2건 포함)
+- PostgreSQL 16으로 업그레이드
+- 통계 쿼리 최적화 (명시적 타입 캐스팅)
+- 모든 select 요소 색상 일관성 개선
+
+**성능 최적화**
+- 브라우저 캐싱 설정 최적화
+- React Portal 패턴 적용으로 렌더링 성능 향상
+- 대시보드 차트 로딩 속도 개선
+
+**운영 편의성**
+- Docker Compose 통해 빠른 배포 가능
+- 초기화 스크립트로 자동 설정
+- pgAdmin 포함으로 DB 관리 편이
+
+#### 배포 후 검증 체크리스트
+
+```bash
+# 1. 서비스 상태 확인
+docker-compose ps
+# 출력: 모든 서비스 "Up" 상태 확인
+
+# 2. API 헬스 체크
+curl http://localhost:8080/api/health
+# 출력: {"status":"OK", ...}
+
+# 3. 프론트엔드 접속
+# http://localhost:3000 접속 및 로딩 확인
+
+# 4. 통계 데이터 확인
+curl http://localhost:8080/api/statistics/weekly
+# 출력: 실제 데이터 (0이 아닌 값)
+
+# 5. 데이터베이스 연결
+docker exec devlog-postgres psql -U devlog -d devlog -c "SELECT COUNT(*) FROM dev_logs;"
+```
+
+### 알려진 제한사항
+
+- **현재**: 단일 사용자 모드 (인증 미구현)
+- **향후 계획**: 사용자 인증 및 멀티테넌트 지원
+
+---
+
 ## 부록
 
 ### 유용한 명령어 모음
@@ -1002,5 +1053,12 @@ docker exec devlog-backend ping -c 3 devlog-postgres
 
 ---
 
-**DevLog Operations Manual v1.0**
+**DevLog Operations Manual v1.1.0**
 *Last Updated: 2025-12-31*
+
+### 버전 변경 이력
+
+| 버전 | 날짜 | 주요 변경사항 |
+|------|------|---------|
+| 1.1.0 | 2025-12-31 | 최근 버그 수정 및 개선사항 문서화, 배포 검증 체크리스트 추가 |
+| 1.0 | 2025-12-31 | 초기 운영 매뉴얼 작성 |
